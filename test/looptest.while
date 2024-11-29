@@ -1,0 +1,10 @@
+function loopTest :
+read Input
+%
+Result := nil;
+while Input do
+  Result := (cons nil Result);
+  Input := (tl Input)
+od
+%
+write Result
