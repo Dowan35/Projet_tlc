@@ -1,91 +1,73 @@
-grammar expr_num;
+grammar While;
 
-start
-    returns [double value]
-    : e=expression
-    {
-        System.out.println("Resultat : " + $e.value);
-        $value = $e.value;
-    }
-    EOF
-    ;
-	
-ID  :	('a'..'z'|'A'..'Z'|'_') ('a'..'z'|'A'..'Z'|'0'..'9'|'_')*
-    ;
+//Structure principale
+Program :	 Function+ ;
 
-INT :	'0'..'9'+
-    ;
+Function :	 'function' Symbol ':' Definition;
 
-FLOAT
-    :   ('0'..'9')+ '.' ('0'..'9')* EXPONENT?
-    |   '.' ('0'..'9')+ EXPONENT?
-    |   ('0'..'9')+ EXPONENT
-    ;
+Definition:	'read' Input '%' Commands '%' 'write' Output;
 
-COMMENT
-    :   '//' ~('\n'|'\r')* '\r'? '\n' {$channel=HIDDEN;}
-    |   '/*' ( options {greedy=false;} : . )* '*/' {$channel=HIDDEN;}
-    ;
 
-WS  :   ( ' '
-        | '\t'
-        | '\r'
-        | '\n'
-        ) {$channel=HIDDEN;}
-    ;
+//Gestion des entrées
+Input	:	 InputSub | ;
+InputSub:	 Variable (',' InputSub)?;
 
-fragment
-EXPONENT : ('e'|'E') ('+'|'-')? ('0'..'9')+ ;
 
-// Expression complète avec addition et soustraction
-expression returns [double value]
-    : left=term {
-        $value = $left.value;
-    }
-    (
-        '+' right=term { 
-            $value += $right.value;
-        }
-        | '-' right=term {
-            $value -= $right.value;
-        }
-    )*
-    ;
+//Gestion des sorties
+Output : Variable (',' Output)? ;
 
-// Terme (multiplication et division)
-term returns [double value]
-    : left=factor {
-        $value = $left.value;
-    }
-    (
-        '*' right=factor {
-            $value *= $right.value;
-        }
-        | '/' right=factor {
-            $value /= $right.value;
-        }
-    )*
-    ;
 
-// Facteur (négatif, nombre ou sous-expression)
-factor returns [double value]
-    : '-' primary { 
-          $value = -$primary.value; 
-        }
-    | primary { 
-          $value = $primary.value; 
-        }
-    ;
+//Listes des commandes
+Commands:	Command (';' Commands)? ;
 
-// Valeur primaire (nombre ou parenthèses)
-primary returns [double value]
-    : INT {
-          $value = Integer.parseInt($INT.text); 
-        }
-    | FLOAT { 
-          $value = Double.parseDouble($FLOAT.text); 
-        }
-    | '(' e=expression ')' {
-          $value = $e.value; 
-        }
-    ;
+Command	:	
+	'nop'//Pas d'opération
+	|Vars ':=' Expression
+	|'if' Expression 'then' Commands ('else' Commands)? 'fi'//Conditionnelle
+    	| 'while' Expression 'do' Commands 'od'//Boucle while
+    	| 'for' Expression 'do' Commands 'od'//Boucle for
+    	| 'foreach' Variable 'in' Expression 'do' Commands 'od'//Boucle foreach
+	;
+
+//Variable multiple
+Vars	:	 Variable (',' Vars)? ;
+
+
+// Expressions multiples
+Exprs : Expression (',' Exprs)? ;
+
+
+// Expression principale
+Expression
+    : ExprBase                                    // Expression de base
+    | ExprBase '=?' ExprBase ;                    // Comparaison d'expressions
+    
+
+// Expressions de base
+ExprBase
+    : 'nil'                                       // Constante "nil"
+    | Variable                                    // Variable
+    | Symbol                                      // Symbole
+    | '(' 'cons' lExpr ')'                        // Construction d'une liste avec "cons"
+    | '(' 'list' lExpr ')'                        // Construction d'une liste avec "list"
+    | '(' 'hd' ExprBase ')'                       // Extraction de la tête d'une liste
+    | '(' 'tl' ExprBase ')'                       // Extraction de la queue d'une liste
+    | '(' Symbol lExpr ')' ;                      // Appel de symbole avec arguments
+    
+    
+// Liste d'expressions
+lExpr : ExprBase lExpr | ;
+
+
+// Variables et symboles
+Variable : MAJ (MAJ | MIN | DEC)* ('!' | '?')? ; // Variables commençant par une majuscule
+Symbol : MIN (MAJ | MIN | DEC)* ('!' | '?')? ;   // Symboles commençant par une minuscule
+
+
+// Terminaux
+MAJ : 'A'..'Z' ;             // Lettres majuscules
+MIN : 'a'..'z' ;             // Lettres minuscules
+DEC : '0'..'9' ;             // Chiffres
+WS  :   ( ' '| '\t'| '\r') {$channel=HIDDEN;};
+
+
