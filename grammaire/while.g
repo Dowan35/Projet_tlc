@@ -1,4 +1,4 @@
-grammar While;
+grammar while;
 
 //Structure principale
 Program :	 Function+ ;
