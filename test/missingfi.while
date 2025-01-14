@@ -1,0 +1,7 @@
+function missingFi :
+read Input
+%
+if Input then
+  Result := (cons nil nil)
+%
+write Result

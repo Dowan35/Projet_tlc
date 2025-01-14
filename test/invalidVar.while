@@ -1,0 +1,6 @@
+function invalidVar :
+read X$
+%
+Result := X$
+%
+write Result

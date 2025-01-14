@@ -1,0 +1,5 @@
+generer le lexer et parser :
+java -jar lib/antlr-3.5.3-complete-no-st3.jar -o src/ -package src src/Ast.g
+
+generer les fonctions visiteurs:
+./lib/antlr-3.5.3-complete-no-st3.jar -Dlanguage=Java -visitor ./src/Ast.g
