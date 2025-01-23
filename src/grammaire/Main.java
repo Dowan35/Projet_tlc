@@ -34,9 +34,9 @@ public class Main {
         //Path filePath = Paths.get(file);
         //String fileContent = Files.readString(filePath);
 
-        // String file = "./src/codesExamples/allFunctions.txt";
-        String file = "./grammaire/codesExamples/test.txt";
-        //String file = "./src/codesExamples/function.txt";
+        // String file = "./grammaire/codesExamples/allFunctions.txt";
+        //String file = "./grammaire/codesExamples/test.txt";
+        String file = "./grammaire/codesExamples/function.txt";
         InputStream fileInputStream = new FileInputStream(file);
         ANTLRInputStream inputStream = new ANTLRInputStream(fileInputStream);
 
