@@ -1,6 +1,6 @@
-import org.antlr.runtime.tree.Tree;
 import java.util.ArrayList;
 import java.util.List;
+import org.antlr.runtime.tree.Tree;
 
 public class ThreeAddressCodeGenerator {
 
@@ -16,111 +16,175 @@ public class ThreeAddressCodeGenerator {
 
     // Méthode récursive pour traduire un nœud de l'AST
     private void translateNode(Tree node, List<String> result) {
-        switch (node.getType()) {
-            case WhileLexer.PROGRAM:
-            case WhileLexer.COMMANDS:
-                for (int i = 0; i < node.getChildCount(); i++) {
-                    translateNode(node.getChild(i), result);
-                }
+        if (node == null) return;
+    
+        switch (node.getText()) {
+            case "PROGRAM":
+                forEachChild(node, child -> translateNode(child, result));
                 break;
-
-            case WhileLexer.READ:
-                String readVar = node.getChild(0).getText();
-                result.add("read " + readVar);
+    
+            case "FUNCTION":
+                String functionName = getChildText(node, 0);
+                result.add("function " + functionName + ":");
+    
+                // Traiter les sous-nœuds
+                translateNode(getChild(node, 1), result); // Inputs
+                translateNode(getChild(node, 2), result); // Commands
+                translateNode(getChild(node, 3), result); // Outputs
+    
+                result.add("end_function");
                 break;
-
-            case WhileLexer.WRITE:
-                String writeVar = node.getChild(0).getText();
-                result.add("write " + writeVar);
+    
+            case "INPUTS":
+                // Traiter chaque enfant comme une variable à lire
+                forEachChild(node, child -> {
+                    String readVar = child.getText();
+                    result.add("read " + readVar);
+                });
                 break;
-
-            case WhileLexer.ASSIGN:
-                String leftVar = node.getChild(0).getText();
-                String exprResult = translateExpression(node.getChild(1), result);
-                result.add(leftVar + " = " + exprResult);
+            
+            case "OUTPUTS":
+                // Traiter chaque enfant comme une variable à écrire
+                forEachChild(node, child -> {
+                    String writeVar = child.getText();
+                    result.add("write " + writeVar);
+                });
                 break;
-
-            case WhileLexer.IF:
-                String condition = translateExpression(node.getChild(0), result);
-                String elseLabel = generateLabel("else");
-                String endLabel = generateLabel("end_if");
-
-                result.add("ifz " + condition + " goto " + elseLabel);
-                translateNode(node.getChild(1), result); // then branch
-                result.add("goto " + endLabel);
-                result.add(elseLabel + ":");
-                if (node.getChildCount() > 2) {
-                    translateNode(node.getChild(2), result); // else branch
-                }
-                result.add(endLabel + ":");
-                break;
-
-            case WhileLexer.WHILE:
-                String startLabel = generateLabel("while_start");
-                String endLabelWhile = generateLabel("while_end");
-                String whileCondition = translateExpression(node.getChild(0), result);
-
-                result.add(startLabel + ":");
-                result.add("ifz " + whileCondition + " goto " + endLabelWhile);
-                translateNode(node.getChild(1), result); // body
-                result.add("goto " + startLabel);
-                result.add(endLabelWhile + ":");
-                break;
-
-            case WhileLexer.FOR:
-                String forVar = node.getChild(0).getText();
-                String forCondition = generateTemp();
-                String forStartLabel = generateLabel("for_start");
-                String forEndLabel = generateLabel("for_end");
-
-                result.add(forVar + " = " + translateExpression(node.getChild(0), result));
-                result.add(forStartLabel + ":");
-                result.add(forCondition + " = " + forVar + " <= 0");
-                result.add("ifz " + forCondition + " goto " + forEndLabel);
-                translateNode(node.getChild(1), result); // body
-                result.add(forVar + " = " + forVar + "[1]");
-                result.add("goto " + forStartLabel);
-                result.add(forEndLabel + ":");
+            
+            case "COMMANDS":
+                // Traiter chaque commande dans le bloc
+                forEachChild(node, child -> translateNode(child, result));
                 break;
 
             default:
-                throw new IllegalArgumentException("Unknown node type: " + node.getType());
+                // Tout autre cas est traité comme une expression
+                translateExpression(node, result);
+                break;
         }
     }
 
     // Méthode pour traduire une expression en code trois adresses
     private String translateExpression(Tree node, List<String> result) {
-        switch (node.getType()) {
-            case WhileLexer.NUMBER:
-                return node.getText();
+        if (node == null) return "";
+    
+        try {
+            switch (node.getText()) {
+                case "NUMBER":
+                case "SYMB":
+                case "Symbol":
+                case "Variable":
+                    // Retourne directement le texte de base
+                    return node.getText();
+    
+                case "LET":
+                    // Affectation : x = expression
+                    String leftVar = getChildText(node, 0);
+                    String rightExpr = translateExpression(getChild(node, 1), result);
+                    result.add(leftVar + " = " + rightExpr);
+                    return leftVar;
+    
+                case "IF":
+                    // Conditionnelle
+                    String condition = translateExpression(getChild(node, 0), result);
+                    String elseLabel = generateLabel("else");
+                    String endLabel = generateLabel("end_if");
+    
+                    result.add("ifz " + condition + " goto " + elseLabel);
+                    translateExpression(getChild(node, 1), result); // then branch
+                    result.add("goto " + endLabel);
+                    result.add(elseLabel + ":");
+                    if (node.getChildCount() > 2) {
+                        translateExpression(getChild(node, 2), result); // else branch
+                    }
+                    result.add(endLabel + ":");
+                    return "";
 
-            case WhileLexer.VARIABLE:
-                return node.getText();
+                case "CONS":
+                    String left = translateExpression(getChild(node, 0), result);
+                    String right = translateExpression(getChild(node, 1), result);
+                
+                    // Si l'un des côtés est NIL, ajustez la sortie
+                    if (left.isEmpty() || left.equals("NIL")) left = "NIL";
+                    if (right.isEmpty() || right.equals("NIL")) right = "NIL";
+                
+                    String tempCons = generateTemp();
+                    result.add(tempCons + " = " + left + " : " + right);
+                    return tempCons;
+                
 
-            case WhileLexer.PLUS:
-            case WhileLexer.MINUS:
-            case WhileLexer.MULT:
-            case WhileLexer.DIV:
-                String left = translateExpression(node.getChild(0), result);
-                String right = translateExpression(node.getChild(1), result);
-                String temp = generateTemp();
-                result.add(temp + " = " + left + " " + getOperator(node.getType()) + " " + right);
-                return temp;
+                case "NIL":
+                    return ""; 
+    
+                case "WHILE":
+                    // Boucle while
+                    String startLabel = generateLabel("while_start");
+                    String endLabelWhile = generateLabel("while_end");
+                    String whileCondition = translateExpression(getChild(node, 0), result);
+    
+                    result.add(startLabel + ":");
+                    result.add("ifz " + whileCondition + " goto " + endLabelWhile);
+                    translateExpression(getChild(node, 1), result); // body
+                    result.add("goto " + startLabel);
+                    result.add(endLabelWhile + ":");
+                    return "";
+    
+                case "FOR":
+                    // Boucle for
+                    String forVar = getChildText(node, 0);
+                    String forCondition = generateTemp();
+                    String forStartLabel = generateLabel("for_start");
+                    String forEndLabel = generateLabel("for_end");
+    
+                    result.add(forVar + " = " + translateExpression(getChild(node, 1), result));
+                    result.add(forStartLabel + ":");
+                    result.add(forCondition + " = " + forVar + " <= 0");
+                    result.add("ifz " + forCondition + " goto " + forEndLabel);
+                    translateExpression(getChild(node, 2), result); // body
+                    result.add(forVar + " = " + forVar + " + 1");
+                    result.add("goto " + forStartLabel);
+                    result.add(forEndLabel + ":");
+                    return "";
+    
+                case "PLUS":
+                case "MINUS":
+                case "MULT":
+                case "DIV":
+                    // Opérations arithmétiques
+                    String leftOp = translateExpression(getChild(node, 0), result);
+                    String rightOp = translateExpression(getChild(node, 1), result);
+                    String tempOp = generateTemp();
+                    result.add(tempOp + " = " + leftOp + " " + getOperator(node.getText()) + " " + rightOp);
+                    return tempOp;
+    
+                case "EXPRS":
+                case "COMMANDS":
+                    // Blocs de commandes ou expressions
+                    forEachChild(node, child -> translateExpression(child, result));
+                    return "";
+    
+                default:
+                    throw new IllegalArgumentException("Unknown expression type: " + node.getText());
+            }
+        } catch (RuntimeException e) {
+            throw new RuntimeException("Error processing expression node: " + node.getText(), e);
+        }
+    }
 
-            case WhileLexer.HD:
-                String listHd = translateExpression(node.getChild(0), result);
-                String tempHd = generateTemp();
-                result.add(tempHd + " = " + listHd + "[0]");
-                return tempHd;
+    // Méthodes utilitaires pour gérer les enfants des nœuds
+    private Tree getChild(Tree node, int index) {
+        if (index < 0 || index >= node.getChildCount()) {
+            throw new IllegalArgumentException("Invalid child index: " + index);
+        }
+        return node.getChild(index);
+    }
 
-            case WhileLexer.TL:
-                String listTl = translateExpression(node.getChild(0), result);
-                String tempTl = generateTemp();
-                result.add(tempTl + " = " + listTl + "[1]");
-                return tempTl;
+    private String getChildText(Tree node, int index) {
+        return getChild(node, index).getText();
+    }
 
-            default:
-                throw new IllegalArgumentException("Unknown expression type: " + node.getType());
+    private void forEachChild(Tree node, java.util.function.Consumer<Tree> action) {
+        for (int i = 0; i < node.getChildCount(); i++) {
+            action.accept(getChild(node, i));
         }
     }
 
@@ -135,12 +199,12 @@ public class ThreeAddressCodeGenerator {
     }
 
     // Méthode pour obtenir le symbole d'une opération
-    private String getOperator(int type) {
+    private String getOperator(String type) {
         switch (type) {
-            case WhileLexer.PLUS: return "+";
-            case WhileLexer.MINUS: return "-";
-            case WhileLexer.MULT: return "*";
-            case WhileLexer.DIV: return "/";
+            case "PLUS": return "+";
+            case "MINUS": return "-";
+            case "MULT": return "*";
+            case "DIV": return "/";
             default: throw new IllegalArgumentException("Unknown operator type: " + type);
         }
     }

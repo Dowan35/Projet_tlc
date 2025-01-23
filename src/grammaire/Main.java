@@ -1,22 +1,23 @@
-import org.antlr.runtime.*; // Import des classes d'ANTLR (CommonTokenStream, ANTLRInputStream, etc.)
+import org.antlr.runtime.*;
 import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.Tree;
 
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.List;
 
 import antlr.WhileLexer;
 import antlr.WhileParser;
 
 public class Main {
+
+    // Fonction pour afficher l'AST de manière hiérarchique
     public static void printTree(Tree tree, String prefix, boolean isTail) {
         if (tree == null)
             return;
 
-        // Afficher le nœud actuel avec des bordures
         System.out.println(prefix + (isTail ? "└── " : "├── ") + "[" + tree.getText() + "]");
 
-        // Parcourir les enfants
         for (int i = 0; i < tree.getChildCount(); i++) {
             boolean isLastChild = (i == tree.getChildCount() - 1);
             printTree(tree.getChild(i), prefix + (isTail ? "    " : "│   "), isLastChild);
@@ -24,53 +25,52 @@ public class Main {
     }
 
     public static void main(String[] args) throws Exception {
-        // String input = "function invalidVar :\nread X$\n%\nResult := X$\n%\nwrite
-        // Result";
-        // ANTLRStringStream inputStream = new ANTLRStringStream(input); // Lecture
-        // depuis une chaîne
-
         // Lire l'entrée depuis un fichier
-        // String file = "./codesExamples/function.txt";
-        //Path filePath = Paths.get(file);
-        //String fileContent = Files.readString(filePath);
-
-        // String file = "./src/codesExamples/allFunctions.txt";
-        String file = "./src/codesExamples/test.txt";
-        //String file = "./src/codesExamples/function.txt";
+        String file = "./grammaire/codesExamples/function.txt";
         InputStream fileInputStream = new FileInputStream(file);
         ANTLRInputStream inputStream = new ANTLRInputStream(fileInputStream);
 
-        // 2. Initialisation du Lexer
+        // Initialisation du Lexer
         WhileLexer lexer = new WhileLexer(inputStream);
         CommonTokenStream tokenStream = new CommonTokenStream(lexer);
 
-        // 3. Initialisation du Parser
+        // Initialisation du Parser
         WhileParser parser = new WhileParser(tokenStream);
 
-        // 4. Lancer l'analyse syntaxique et sémantique
         try {
-            WhileParser.program_return result = parser.program(); // Récupérer le résultat
-            CommonTree astRoot = (CommonTree) result.getTree(); // Extraire l'AST
+            // Analyse syntaxique et récupération de l'AST
+            WhileParser.program_return result = parser.program(); // Résultat du parsing
+            CommonTree astRoot = (CommonTree) result.getTree(); // Récupérer l'AST
             System.out.println("Analyse réussie !");
 
-            // Affichez l'AST
-            System.out.println("AST :");
+            // Afficher l'AST
+            System.out.println("\nAST :");
             printTree(astRoot, "", true);
 
-            // Analyse sémantique avec le visiteur
+            // Analyse sémantique
             ASTVisitor visitor = new ASTVisitor();
             visitor.visit(astRoot);
             if (visitor.hasErrors()) {
-                System.err.println("Erreurs sémantiques :");
+                System.err.println("\nErreurs sémantiques :");
                 for (String error : visitor.getErrors()) {
                     System.err.println(error);
                 }
             } else {
-                System.out.println("Analyse sémantique réussie !");
+                System.out.println("\nAnalyse sémantique réussie !");
+
+                // Génération du code 3 adresses
+                ThreeAddressCodeGenerator generator = new ThreeAddressCodeGenerator();
+                List<String> tacCode = generator.generateCode(astRoot);
+
+                // Affichage du code trois adresses généré
+                System.out.println("\nCode trois adresses généré :");
+                for (String line : tacCode) {
+                    System.out.println(line);
+                }
             }
 
         } catch (RecognitionException e) {
-            System.err.println("Erreur d'analyse : " + e.getMessage());
+            System.err.println("Erreur d'analyse syntaxique : " + e.getMessage());
         } catch (Exception e) {
             // Gérer les erreurs générales (parsing, IO, etc.)
             e.printStackTrace();
