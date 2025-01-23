@@ -98,6 +98,22 @@ public class ThreeAddressCodeGenerator {
                     }
                     result.add(endLabel + ":");
                     return "";
+
+                case "CONS":
+                    String left = translateExpression(getChild(node, 0), result);
+                    String right = translateExpression(getChild(node, 1), result);
+                
+                    // Si l'un des côtés est NIL, ajustez la sortie
+                    if (left.isEmpty() || left.equals("NIL")) left = "NIL";
+                    if (right.isEmpty() || right.equals("NIL")) right = "NIL";
+                
+                    String tempCons = generateTemp();
+                    result.add(tempCons + " = " + left + " : " + right);
+                    return tempCons;
+                
+
+                case "NIL":
+                    return ""; 
     
                 case "WHILE":
                     // Boucle while
