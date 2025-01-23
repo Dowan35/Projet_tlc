@@ -5,6 +5,6 @@
     ],
     "java.project.outputPath": "bin",
     "java.project.referencedLibraries": [
-        "c:\\Users\\gulli\\Desktop\\mon pc\\a COURS ESIR\\tlc\\projet\\Projet_tlc\\src\\lib\\antlr-3.5.3-complete-no-st3.jar"
+        "lib/*.jar"
     ]
 }
