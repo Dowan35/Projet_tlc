@@ -1,6 +1,7 @@
 import org.antlr.runtime.tree.Tree;
 import java.util.ArrayList;
 import java.util.List;
+import antlr.WhileLexer;
 
 public class ThreeAddressCodeGenerator {
 
