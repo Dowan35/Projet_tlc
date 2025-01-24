@@ -29,8 +29,14 @@ import java.util.List;
         }
 
         public static void main(String[] args) throws Exception {
-            // Lire l'entrée depuis un fichier
-            String file = "./grammaire/codesExamples/function.txt";
+            if (args.length < 1) {
+                // Lire l'entrée depuis un fichier
+                String file = "./grammaire/codesExamples/function.txt";
+            } else {
+                // Récupère le chemin du fichier à analyser depuis les arguments
+                String file = args[0];
+            }
+
             // Fichier de sortie pour le code trois adresses
             String outputFile = "./grammaire/codesExamples/function.3a";
         

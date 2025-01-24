@@ -1,6 +1,6 @@
 @echo off
 REM Set variables
-set ANTLR_JAR=antlr-4.13.0-complete.jar
+set ANTLR_JAR=.\src\lib\antlr-3.5.3-complete-no-st3.jar
 set GRAMMAR_FILE=grammaire\grammaire.g4
 set OUTPUT_DIR=output
 set SRC_DIR=src
@@ -8,8 +8,8 @@ set BUILD_DIR=build
 set EXECUTABLE=my_program
 
 REM Paths to ANTLR runtime (adjust these for your setup)
-set ANTLR_INCLUDE=C:\path\to\antlr\include
-set ANTLR_LIB=C:\path\to\antlr\lib
+set ANTLR_INCLUDE=.\src\lib\antlr-3.5.3-complete-no-st3.jar
+set ANTLR_LIB=.\src\lib\
 set ANTLR_RUNTIME_LIB=antlr4-runtime.lib
 
 REM Create directories if they don't exist
