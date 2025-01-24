@@ -14,50 +14,59 @@ public class ThreeAddressCodeGenerator {
         return result;
     }
 
-    // Méthode récursive pour traduire un nœud de l'AST
     private void translateNode(Tree node, List<String> result) {
-        if (node == null) return;
-    
+        if (node == null) {
+            return;
+        }
+
         switch (node.getText()) {
             case "PROGRAM":
                 forEachChild(node, child -> translateNode(child, result));
                 break;
-    
+
             case "FUNCTION":
                 String functionName = getChildText(node, 0);
                 result.add("function " + functionName + ":");
-    
-                // Traiter les sous-nœuds
                 translateNode(getChild(node, 1), result); // Inputs
                 translateNode(getChild(node, 2), result); // Commands
                 translateNode(getChild(node, 3), result); // Outputs
-    
                 result.add("end_function");
                 break;
-    
+
             case "INPUTS":
-                // Traiter chaque enfant comme une variable à lire
                 forEachChild(node, child -> {
                     String readVar = child.getText();
                     result.add("read " + readVar);
                 });
                 break;
-            
+
             case "OUTPUTS":
-                // Traiter chaque enfant comme une variable à écrire
                 forEachChild(node, child -> {
                     String writeVar = child.getText();
-                    result.add("write " + writeVar);
+                    if (!writeVar.isEmpty()) {
+                        result.add("write " + writeVar);
+                    }
                 });
                 break;
-            
+
             case "COMMANDS":
-                // Traiter chaque commande dans le bloc
                 forEachChild(node, child -> translateNode(child, result));
                 break;
 
+            case "VARS":
+                List<String> vars = new ArrayList<>();
+                forEachChild(node, child -> {
+                    String varName = child.getText();
+                    if (!varName.isEmpty()) {
+                        vars.add(varName);
+                    }
+                });
+                if (!vars.isEmpty()) {
+                    result.add("VARS = " + String.join(", ", vars));
+                }
+                break;
+
             default:
-                // Tout autre cas est traité comme une expression
                 translateExpression(node, result);
                 break;
         }
@@ -70,66 +79,69 @@ public class ThreeAddressCodeGenerator {
         try {
             switch (node.getText()) {
                 case "NUMBER":
-                case "SYMB":
                 case "Symbol":
                 case "Variable":
-                    // Retourne directement le texte de base
                     return node.getText();
     
                 case "LET":
-                    // Affectation : x = expression
                     String leftVar = getChildText(node, 0);
                     String rightExpr = translateExpression(getChild(node, 1), result);
                     result.add(leftVar + " = " + rightExpr);
                     return leftVar;
     
+                case "CONS":
+                    String left = translateExpression(getChild(node, 0), result);
+                    String right = translateExpression(getChild(node, 1), result);
+                    if (left.isEmpty()) left = "NIL";
+                    if (right.isEmpty()) right = "NIL";
+                    String tempCons = generateTemp();
+                    result.add(tempCons + " = CONS " + left + ", " + right);
+                    result.add("Result = " + tempCons);
+                    return tempCons;
+    
+                case "SYMB":
+                    String functionName = getChildText(node, 0);
+                    String tempCallResult = generateTemp();
+                    result.add(tempCallResult + " = CALL " + functionName); // Appel de fonction
+                    if (node.getChildCount() > 1) { // Vérifie s'il y a un second enfant
+                        String resultVar = getChildText(node, 1);
+                        if (!resultVar.isEmpty()) {
+                            result.add(resultVar + " = " + tempCallResult); // Stocke le résultat dans une variable
+                        }
+                    }
+                    return tempCallResult;
+    
                 case "IF":
-                    // Conditionnelle
                     String condition = translateExpression(getChild(node, 0), result);
                     String elseLabel = generateLabel("else");
                     String endLabel = generateLabel("end_if");
     
                     result.add("ifz " + condition + " goto " + elseLabel);
-                    translateExpression(getChild(node, 1), result); // then branch
+                    translateExpression(getChild(node, 1), result);
                     result.add("goto " + endLabel);
                     result.add(elseLabel + ":");
                     if (node.getChildCount() > 2) {
-                        translateExpression(getChild(node, 2), result); // else branch
+                        translateExpression(getChild(node, 2), result);
                     }
                     result.add(endLabel + ":");
                     return "";
-
-                case "CONS":
-                    String left = translateExpression(getChild(node, 0), result);
-                    String right = translateExpression(getChild(node, 1), result);
-                
-                    // Si l'un des côtés est NIL, ajustez la sortie
-                    if (left.isEmpty() || left.equals("NIL")) left = "NIL";
-                    if (right.isEmpty() || right.equals("NIL")) right = "NIL";
-                
-                    String tempCons = generateTemp();
-                    result.add(tempCons + " = " + left + " : " + right);
-                    return tempCons;
-                
-
+    
                 case "NIL":
-                    return ""; 
+                    return "NIL";
     
                 case "WHILE":
-                    // Boucle while
                     String startLabel = generateLabel("while_start");
                     String endLabelWhile = generateLabel("while_end");
                     String whileCondition = translateExpression(getChild(node, 0), result);
     
                     result.add(startLabel + ":");
                     result.add("ifz " + whileCondition + " goto " + endLabelWhile);
-                    translateExpression(getChild(node, 1), result); // body
+                    translateExpression(getChild(node, 1), result);
                     result.add("goto " + startLabel);
                     result.add(endLabelWhile + ":");
                     return "";
     
                 case "FOR":
-                    // Boucle for
                     String forVar = getChildText(node, 0);
                     String forCondition = generateTemp();
                     String forStartLabel = generateLabel("for_start");
@@ -139,7 +151,7 @@ public class ThreeAddressCodeGenerator {
                     result.add(forStartLabel + ":");
                     result.add(forCondition + " = " + forVar + " <= 0");
                     result.add("ifz " + forCondition + " goto " + forEndLabel);
-                    translateExpression(getChild(node, 2), result); // body
+                    translateExpression(getChild(node, 2), result);
                     result.add(forVar + " = " + forVar + " + 1");
                     result.add("goto " + forStartLabel);
                     result.add(forEndLabel + ":");
@@ -149,7 +161,6 @@ public class ThreeAddressCodeGenerator {
                 case "MINUS":
                 case "MULT":
                 case "DIV":
-                    // Opérations arithmétiques
                     String leftOp = translateExpression(getChild(node, 0), result);
                     String rightOp = translateExpression(getChild(node, 1), result);
                     String tempOp = generateTemp();
@@ -158,7 +169,6 @@ public class ThreeAddressCodeGenerator {
     
                 case "EXPRS":
                 case "COMMANDS":
-                    // Blocs de commandes ou expressions
                     forEachChild(node, child -> translateExpression(child, result));
                     return "";
     
@@ -169,6 +179,7 @@ public class ThreeAddressCodeGenerator {
             throw new RuntimeException("Error processing expression node: " + node.getText(), e);
         }
     }
+    
 
     // Méthodes utilitaires pour gérer les enfants des nœuds
     private Tree getChild(Tree node, int index) {
@@ -190,7 +201,7 @@ public class ThreeAddressCodeGenerator {
 
     // Méthode pour générer un nom de registre temporaire
     private String generateTemp() {
-        return "R_" + (tempCounter++);
+        return "R" + (tempCounter++);
     }
 
     // Méthode pour générer une étiquette
@@ -208,4 +219,5 @@ public class ThreeAddressCodeGenerator {
             default: throw new IllegalArgumentException("Unknown operator type: " + type);
         }
     }
+
 }
