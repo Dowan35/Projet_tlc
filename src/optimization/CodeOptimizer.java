@@ -5,7 +5,7 @@ public class CodeOptimizer {
     public List<String> optimize(List<String> tacCode) { // input code as list of strings
         List<String> optimizedCode = new ArrayList<>();
 
-        // Track variable definitions and values for optimizations
+        //Track variable definitions and values for optimizations
         Map<String, String> computedValues = new HashMap<>();
         Set<String> usedVariables = new HashSet<>();
 
