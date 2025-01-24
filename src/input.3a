@@ -1,5 +1,0 @@
-FUNCTION true_func()
-    R1 = CONS nil, nil
-    Result = R1
-    RETURN Result
-END_FUNC

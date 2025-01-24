@@ -1,6 +1,6 @@
 #include <iostream>
 using namespace std;
-int true_func() {
-    int R1 =  NULL + 1;
-    int Result = R1;
-}
+function tru:
+    int R0;
+    R0 = CONS(NIL,  NIL);
+function main:

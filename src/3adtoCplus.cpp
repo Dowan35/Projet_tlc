@@ -6,6 +6,8 @@
 #include <cctype>
 #include <algorithm>
 
+//pour le lancer, mettre en premier argument le fichier 3a à traduire puis en deuxième argument le nom du fichier C++ qui sera généré
+
 // Fonction pour convertir une chaîne en minuscules
 void toLowerCase(std::string &str) {
     std::transform(str.begin(), str.end(), str.begin(), ::tolower);

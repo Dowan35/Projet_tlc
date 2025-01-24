@@ -3,6 +3,7 @@ import org.antlr.runtime.tree.CommonTree;
 import org.antlr.runtime.tree.Tree;
 
 import java.io.FileInputStream;
+import java.io.FileWriter;
 import java.io.InputStream;
 import java.util.List;
 
@@ -27,6 +28,9 @@ public class Main {
     public static void main(String[] args) throws Exception {
         // Lire l'entrée depuis un fichier
         String file = "./grammaire/codesExamples/function.txt";
+        // Fichier de sortie pour le code trois adresses
+        String outputFile = "./grammaire/codesExamples/function.3a";
+
         InputStream fileInputStream = new FileInputStream(file);
         ANTLRInputStream inputStream = new ANTLRInputStream(fileInputStream);
 
@@ -66,6 +70,14 @@ public class Main {
                 System.out.println("\nCode trois adresses généré :");
                 for (String line : tacCode) {
                     System.out.println(line);
+                }
+
+                // Écriture du code trois adresses dans un fichier
+                try (FileWriter fileWriter = new FileWriter(outputFile)) {
+                    for (String line : tacCode) {
+                        fileWriter.write(line + "\n");
+                    }
+                    System.out.println("\nCode trois adresses écrit dans le fichier : " + outputFile);
                 }
             }
 
