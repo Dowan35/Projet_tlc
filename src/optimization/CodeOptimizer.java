@@ -1,4 +1,3 @@
-package optimization;
 import java.util.*;
 
 public class CodeOptimizer {

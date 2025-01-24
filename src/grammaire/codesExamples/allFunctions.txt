@@ -63,6 +63,7 @@ write Result
 function mul : 
 read Op1, Op2 
 % 
+ Result := nil;
 for Op1 do 
  Result := (add Result Op2) 
 od 
