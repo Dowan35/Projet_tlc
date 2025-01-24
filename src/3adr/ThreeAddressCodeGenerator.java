@@ -179,7 +179,7 @@ public class ThreeAddressCodeGenerator {
             throw new RuntimeException("Error processing expression node: " + node.getText(), e);
         }
     }
-    
+        
 
     // Méthodes utilitaires pour gérer les enfants des nœuds
     private Tree getChild(Tree node, int index) {

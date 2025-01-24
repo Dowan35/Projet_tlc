@@ -1,0 +1,11 @@
+function tru:
+R0 = CONS NIL, NIL
+Result = R0
+VARS = 
+write Result
+end_function
+function main:
+R1 = CALL tru
+VARS = 
+write Res
+end_function
